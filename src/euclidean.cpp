@@ -79,14 +79,32 @@ EmbeddedVector::EmbeddedVector(vector<string> vals){
   }
 }
 
+EmbeddedVector::EmbeddedVector(const EmbeddedVector &evec):
+  name_(evec.name_)
+{
+  values_ = evec.values_;
+}
+
+EmbeddedVector::EmbeddedVector(EmbeddedVector &&evec):
+  name_(evec.name_)
+{
+  values_ = std::move(evec.values_);
+}
+
  void
- Cluster::add_vector(const vector<string> &invec){
-   
-
-
-
+ Cluster::add_vector(EmbeddedVector &embvec){
+   string name = embvec.get_name();
+   string num = name.substr(1);// discard the first char, it is the category
+   int n = std::stoi(num);
+   embedded_vector_map_.insert(std::make_pair(n,std::move(embvec)));
  }
 
+
+
+std::ostream& operator<<(std::ostream& ost, const Cluster& c){
+  ost << "Cluster: " << c.name_ << " [n=" << c.vector_count() << "]";
+  return ost;
+}
 
 
 
@@ -98,7 +116,7 @@ EmbeddedVector::EmbeddedVector(vector<string> vals){
  * with one Cluster for each initial letter.
  * @param path Path to the hn2v output file.
  */
-Parser::Parser(const string & path){
+Parser::Parser(const string & path): path_(path) {
   std::cout << "[INFO] Parsing " << path << "\n";
   std::ifstream infile(path);
     if (! infile.good()) {
@@ -107,20 +125,30 @@ Parser::Parser(const string & path){
       std::exit(1);
     }
     std::string line;
+    std::getline(infile,line); // discard first line
     while (std::getline(infile,line)) {
       //std::cout << line << "\n";
       char category = line.at(0);
       vector<string> v = splitspace(line);
+      EmbeddedVector emvec{v};
       std::map<char,Cluster>::iterator it;
       it = clustermap_.find(category);
       if (it == clustermap_.end()) {
-	clustermap_.emplace(category,Cluster{});
+	Cluster cluster{};
+	cluster.add_vector(emvec);
+	clustermap_.emplace(category,cluster);
+      } else {
+	it->second.add_vector(emvec);
       }
-      Cluster cluster = clustermap_[category];
-      cluster.add_vector(v);
-      
+     
     }
+}
 
-
+void
+Parser::status(){
+  std::cout << "exbed: " << path_ << "\n";
+  for (const auto & p : clustermap_) {
+    std::cout << p.first << ": " << p.second << "\n";
+  }
 
 }

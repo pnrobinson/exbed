@@ -19,6 +19,9 @@ class EmbeddedVector {
 
  public:
   EmbeddedVector(vector<string> vals);
+  EmbeddedVector(const EmbeddedVector &evec);
+  EmbeddedVector(EmbeddedVector &&evec);
+  ~EmbeddedVector(){}
 
   string get_name() const { return name_; }
   vector<double> get_values() const { return values_; }
@@ -38,22 +41,24 @@ class EmbeddedVector {
  */
 class Cluster {
  private:
-  map<string,vector<double>> vectors_;
+  map<int,EmbeddedVector> embedded_vector_map_;
   string name_;
 
  public:
-  void add_vector(const vector<string> &invec);
+  void add_vector(EmbeddedVector &embvec);
+  int vector_count() const { return embedded_vector_map_.size(); }
 
 
-
+  friend std::ostream& operator<<(std::ostream& ost, const Cluster& c);
 };
 
-
+std::ostream& operator<<(std::ostream& ost, const Cluster& c);
 
 
 
 class Parser {
  private:
+  string path_;
   map<char,Cluster> clustermap_;
 
 
@@ -61,7 +66,7 @@ class Parser {
   Parser(const string & path);
 
 
-
+  void status();
 
 };
 
