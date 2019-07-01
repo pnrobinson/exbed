@@ -6,10 +6,30 @@
 
 from collections import defaultdict
 import sys
+import argparse
 
+# initiate the parser
+text = 'This script converts the output of phenol to the input format of exbed.'
+parser = argparse.ArgumentParser(description = text)
+parser.add_argument("-p","--phenoseries",help="phenoseries file, output of phenol")
+parser.add_argument("-m","--medgen",help="path to mim2gene_medgen file")
+parser.add_argument("-o","--out",help="name of output file")
+args = parser.parse_args()
 
-phenoseries_fname = "../phenoseries.txt"
-mim2gene_fname = "../mim2gene_medgen"
+if args.phenoseries:
+    phenoseries_fname = args.phenoseries
+else:
+    print("[ERROR] -p/--phenoseries option required")
+    exit(1)
+if args.medgen:
+    mim2gene_fname = args.medgen
+else:
+    print("[ERROR] -m/--medgen option required")
+    exit(1)
+if args.out:
+    outfile_name = args.out
+else:
+    outfile_name = 'ps2gene.txt'
 
 mondoDict = defaultdict(list)
 pheno2gene = defaultdict(list)
@@ -42,13 +62,18 @@ with open(mim2gene_fname) as f:
 
 print("MONDO2OMIM")
 
-for item in mondoDict:
-    sys.stdout.write(item)
-    for x in mondoDict[item]:
-        #print ("x",x)
-        if x in pheno2gene:
-            for y in pheno2gene[x]:
-                if y == "-":
-                    continue
-                sys.stdout.write("\t{}".format(y))
-    print()
+with open(outfile_name,'w') as fh:
+    for item in mondoDict:
+        sys.stdout.write(item)
+        fh.write(item)
+        for x in mondoDict[item]:
+            if x in pheno2gene:
+                for y in pheno2gene[x]:
+                    if y == "-":
+                        continue
+                    sys.stdout.write("\t{}".format(y))
+                    fh.write("\t{}".format(y))
+        sys.stdout.write('\n')
+        fh.write('\n')
+
+print("Done, we wrote the transformed data to ",outfile_name)

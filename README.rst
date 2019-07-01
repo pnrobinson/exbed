@@ -16,6 +16,9 @@ the phenol-cli with the following parameters. ::
 The name/path of the outfile is arbitrary but will be needed as input for this
 this app.
 
+We then need to transform this file into the input format needed by this
+program (we transform the OMIM disease ids to Entrez Gene ids).
+
 Embedded vector data
 ~~~~~~~~~~~~~~~~~~~~
 
