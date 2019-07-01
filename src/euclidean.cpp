@@ -5,6 +5,7 @@
 #include <fstream>
 #include <algorithm>
 #include <sstream>
+#include <cmath>
 
 
 // split a string on tabs
@@ -91,15 +92,83 @@ EmbeddedVector::EmbeddedVector(EmbeddedVector &&evec):
   values_ = std::move(evec.values_);
 }
 
- void
- Cluster::add_vector(EmbeddedVector &embvec){
+EmbeddedVector
+EmbeddedVector::toCentroid(vector<EmbeddedVector> vecs){
+
+  int N = vecs.size();
+  EmbeddedVector firstvec = vecs.at(0);
+  vector<double> sum = firstvec.get_values();
+  for(int i=1;i<vecs.size(); i++) {
+    vector<double> next = vecs.at(i).get_values();
+    for (int j=0;j<next.size();j++) {
+      sum[j] = sum[j] + next[j];
+    }
+  }
+  for (int j=0;j<sum.size();j++) {
+    sum[j] /= static_cast<double>(N);
+  }
+  EmbeddedVector cent{"centroid",sum};
+  return cent;
+}
+
+double
+EmbeddedVector::distance(const EmbeddedVector &ev) const {
+  double sum_of_squares = 0.0d;
+  for (int i=0;i<values_.size(); i++) {
+    double diff = values_.at(i) - ev.values_.at(i);
+    sum_of_squares += diff * diff;
+  }
+  return sqrt(sum_of_squares);
+}
+
+void
+Cluster::add_vector(EmbeddedVector &embvec){
    string name = embvec.get_name();
    string num = name.substr(1);// discard the first char, it is the category
    int n = std::stoi(num);
    embedded_vector_map_.insert(std::make_pair(n,std::move(embvec)));
  }
 
+bool
+Cluster::contains_gene(int g) const {
+  const auto &p = embedded_vector_map_.find(g);
+  return p != embedded_vector_map_.end();
+}
 
+int
+Cluster::rank(int gene_id,vector<int> others) const {
+  vector<EmbeddedVector> other_vectors;
+  for (int o : others) {
+    if (! contains_gene(o)) {
+      //std::cerr << "[WARNING] could not find gene with id: " << o << "\n";
+      continue;
+    }
+    const auto &p = embedded_vector_map_.find(o);
+    other_vectors.push_back(p->second);
+  }
+  if (other_vectors.size() <2) {
+    std::cerr << "[WARNING] size of other vectors: " << other_vectors.size() << "\n";
+    return -1;
+  }
+  EmbeddedVector centroid = EmbeddedVector::toCentroid(other_vectors);
+    const auto &p = embedded_vector_map_.find(gene_id);
+    if (p == embedded_vector_map_.end()) {
+      std::cerr << "[WARNING] could not find target: " << gene_id << "\n";
+      return -1;
+    }
+  EmbeddedVector target = p->second;
+  double target_distance = target.distance(centroid);
+  int rank=1;
+  for (auto p :   embedded_vector_map_) {
+    int other_gene_id = p.first;
+    EmbeddedVector other_ev = p.second;
+    double other_distance = other_ev.distance(centroid);
+    if (other_distance < target_distance) {
+      rank++;
+    }
+  }
+  return rank;
+}
 
 std::ostream& operator<<(std::ostream& ost, const Cluster& c){
   ost << "Cluster: " << c.name_ << " [n=" << c.vector_count() << "]";
@@ -110,7 +179,7 @@ std::ostream& operator<<(std::ostream& ost, const Cluster& c){
 
 /**
  * Ths assumption is that the name of the node will start
- * with a letter (g,d,p) which indicates the category of the node, 
+ * with a letter (g,d,p) which indicates the category of the node,
  * and that the remainder of the name is an integer.
  * This script will parse in the data and produce a map of Clusters,
  * with one Cluster for each initial letter.
@@ -140,7 +209,7 @@ Parser::Parser(const string & path): path_(path) {
       } else {
 	it->second.add_vector(emvec);
       }
-     
+
     }
 }
 

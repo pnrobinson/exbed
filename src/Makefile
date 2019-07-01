@@ -1,14 +1,14 @@
 CXX=g++
 INC=-I=.
 CXXFLAGS ?= -Wall -g -O0 --std=c++17 ${INC}
-LIBS=
+LIBS=-lm
 
 
 TARGET_EXEC=exbed
 
 ALL=${TARGET_EXEC}
 
-OBJS = euclidean.o
+OBJS = euclidean.o phenoseries.o
 
 
 $(TARGET_EXEC): $(OBJS) main.cpp
@@ -27,4 +27,3 @@ clean:
 	-rm *.o
 	-rm exebd
 	-rm unittests
-

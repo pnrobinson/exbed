@@ -19,15 +19,19 @@ class EmbeddedVector {
 
  public:
   EmbeddedVector(vector<string> vals);
+  static EmbeddedVector toCentroid(vector<EmbeddedVector> vecs);
   EmbeddedVector(const EmbeddedVector &evec);
   EmbeddedVector(EmbeddedVector &&evec);
+  EmbeddedVector(const string &name,const vector<double> vals):name_(name),values_(vals){}
   ~EmbeddedVector(){}
 
   string get_name() const { return name_; }
   vector<double> get_values() const { return values_; }
+  int n_values() const { return values_.size(); }
+  double distance(const EmbeddedVector &ev) const;
 
 
-  
+
 
 };
 
@@ -37,7 +41,7 @@ class EmbeddedVector {
 
 
 /**
- * A cluster of numerical vectors 
+ * A cluster of numerical vectors
  */
 class Cluster {
  private:
@@ -45,8 +49,18 @@ class Cluster {
   string name_;
 
  public:
+   Cluster(){}
+   ~Cluster(){}
+   Cluster(const Cluster &c) = default;
+   Cluster(Cluster &&c)= default;
+  Cluster &operator=(const Cluster &c) = default;
+  Cluster &operator=(Cluster &&c)= default;
   void add_vector(EmbeddedVector &embvec);
   int vector_count() const { return embedded_vector_map_.size(); }
+
+  int rank(int gene_id,vector<int> others) const;
+
+  bool contains_gene(int g) const;
 
 
   friend std::ostream& operator<<(std::ostream& ost, const Cluster& c);
@@ -64,6 +78,7 @@ class Parser {
 
  public:
   Parser(const string & path);
+  const Cluster get_cluster(char c) const { return clustermap_.find(c)->second; }
 
 
   void status();
